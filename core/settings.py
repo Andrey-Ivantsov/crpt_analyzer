@@ -13,6 +13,11 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 # Access control is handled at the Railway network level.
 ALLOWED_HOSTS = ["*"]
 
+# Required in production for CSRF to work.
+# Railway domain is read from the env var Railway injects automatically.
+_railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
+CSRF_TRUSTED_ORIGINS = [f"https://{_railway_domain}"] if _railway_domain else []
+
 # ─── Applications ─────────────────────────────────────────────────────────────
 
 INSTALLED_APPS = [
