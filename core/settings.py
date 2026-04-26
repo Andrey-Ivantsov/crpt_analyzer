@@ -9,17 +9,9 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-# Railway injects RAILWAY_PUBLIC_DOMAIN automatically.
-# Additional hosts can be added via ALLOWED_HOSTS env var (comma-separated).
-_extra_hosts = os.environ.get("ALLOWED_HOSTS", "")
-ALLOWED_HOSTS = [h.strip() for h in _extra_hosts.split(",") if h.strip()]
-
-_railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN")
-if _railway_domain:
-    ALLOWED_HOSTS.append(_railway_domain)
-
-if DEBUG or not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ["*"]
+# Railway healthcheck uses internal IP — allow all hosts.
+# Access control is handled at the Railway network level.
+ALLOWED_HOSTS = ["*"]
 
 # ─── Applications ─────────────────────────────────────────────────────────────
 
