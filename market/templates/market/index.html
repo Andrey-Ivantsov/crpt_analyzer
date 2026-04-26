@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Snapshot</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 720px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #f8fafc;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-bottom: 28px;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* timeframe block spans full width */
+    .field-timeframe {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: #6366f1; }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #475569;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .hint b { color: #64748b; font-weight: 500; }
+
+    /* ── generic chips (click to fill input) ── */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 7px;
+    }
+
+    .chip {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 5px;
+      color: #7c86b0;
+      font-size: 0.72rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      padding: 2px 8px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .chip:hover { border-color: #6366f1; color: #a5b4fc; }
+
+    /* ── timeframe toggle chips ── */
+    .tf-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .tf-chip {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      color: #7c86b0;
+      font-size: 0.82rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      padding: 5px 14px;
+      cursor: pointer;
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .tf-chip:hover { border-color: #6366f1; color: #a5b4fc; }
+
+    .tf-chip.selected {
+      background: #1e1f3a;
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    .tf-none-hint {
+      font-size: 0.75rem;
+      color: #ef4444;
+      margin-top: 6px;
+      display: none;
+    }
+
+    /* ── main button ── */
+    button.primary {
+      width: 100%;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 12px;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      margin-bottom: 24px;
+    }
+
+    button.primary:hover:not(:disabled) { background: #4f46e5; }
+    button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── result area ── */
+    .result-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #334155;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .status-dot.ok    { background: #22c55e; }
+    .status-dot.error { background: #ef4444; }
+
+    .copy-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid #2d3148;
+      border-radius: 6px;
+      color: #64748b;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .copy-btn:hover:not(:disabled) { border-color: #6366f1; color: #a5b4fc; }
+    .copy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .copy-btn.copied  { border-color: #22c55e; color: #22c55e; }
+
+    #result {
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      min-height: 120px;
+      max-height: 480px;
+      overflow-y: auto;
+      white-space: pre;
+    }
+
+    #result.has-data  { color: #e2e8f0; }
+    #result.has-error { color: #f87171; }
+
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #334155;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── prompt block ── */
+    .prompt-block {
+      margin-bottom: 24px;
+    }
+
+    .prompt-textarea {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      color: #94a3b8;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      padding: 14px;
+      resize: vertical;
+      min-height: 220px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .prompt-textarea:focus { border-color: #6366f1; color: #e2e8f0; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>📈 Market Snapshot</h1>
+  <p class="subtitle">Получить текущие данные и индикаторы для торговой пары</p>
+
+  <div class="fields">
+
+    <div>
+      <label for="exchange_id">Exchange</label>
+      <input id="exchange_id" type="text" value="{{ defaults.exchange_id }}" placeholder="bybit" />
+      <div class="chips">
+        <span class="chip" onclick="set('exchange_id','bybit')">bybit</span>
+        <span class="chip" onclick="set('exchange_id','binance')">binance</span>
+        <span class="chip" onclick="set('exchange_id','okx')">okx</span>
+      </div>
+      <p class="hint">Название биржи строчными буквами, как в ccxt</p>
+    </div>
+
+    <div>
+      <label for="symbol">Symbol</label>
+      <input id="symbol" type="text" value="{{ defaults.symbol }}" placeholder="BTC/USDT" />
+      <div class="chips">
+        <span class="chip" onclick="set('symbol','BTC/USDT')">BTC/USDT</span>
+        <span class="chip" onclick="set('symbol','ETH/USDT')">ETH/USDT</span>
+        <span class="chip" onclick="set('symbol','SOL/USDT')">SOL/USDT</span>
+      </div>
+      <p class="hint">Формат: <b>BASE/QUOTE</b> заглавными, разделитель <b>/</b></p>
+    </div>
+
+    <!-- Timeframe: full-width multi-select -->
+    <div class="field-timeframe">
+      <label>Timeframe <span style="color:#475569;text-transform:none;font-weight:400">(можно выбрать несколько)</span></label>
+      <div class="tf-chips" id="tf-chips">
+        <span class="tf-chip" data-tf="1m"  onclick="toggleTf(this)">1m</span>
+        <span class="tf-chip" data-tf="5m"  onclick="toggleTf(this)">5m</span>
+        <span class="tf-chip selected" data-tf="15m" onclick="toggleTf(this)">15m</span>
+        <span class="tf-chip" data-tf="30m" onclick="toggleTf(this)">30m</span>
+        <span class="tf-chip" data-tf="1h"  onclick="toggleTf(this)">1h</span>
+        <span class="tf-chip" data-tf="4h"  onclick="toggleTf(this)">4h</span>
+        <span class="tf-chip" data-tf="1d"  onclick="toggleTf(this)">1d</span>
+        <span class="tf-chip" data-tf="1w"  onclick="toggleTf(this)">1w</span>
+      </div>
+      <p class="tf-none-hint" id="tf-none-hint">Выберите хотя бы один таймфрейм</p>
+      <p class="hint" style="margin-top:8px">
+        <b>m</b> — минуты &nbsp;·&nbsp; <b>h</b> — часы &nbsp;·&nbsp; <b>d</b> — день &nbsp;·&nbsp; <b>w</b> — неделя
+      </p>
+    </div>
+
+    <div>
+      <label for="limit">Limit (свечей)</label>
+      <input id="limit" type="number" value="{{ defaults.limit }}" min="50" max="1000" />
+      <div class="chips">
+        <span class="chip" onclick="set('limit','100')">100</span>
+        <span class="chip" onclick="set('limit','200')">200</span>
+        <span class="chip" onclick="set('limit','500')">500</span>
+      </div>
+      <p class="hint">От <b>50</b> до <b>1000</b>. Минимум 50 нужен для расчёта индикаторов</p>
+    </div>
+
+  </div>
+
+  <button class="primary" id="btn" onclick="fetchSnapshot()">Получить snapshot</button>
+
+  <!-- ── GPT prompt ── -->
+  <div class="prompt-block">
+    <div class="result-label" style="margin-bottom:8px">
+      Промпт для GPT
+      <button class="copy-btn" onclick="copyPrompt()">Копировать</button>
+    </div>
+    <textarea class="prompt-textarea" id="gpt-prompt" spellcheck="false">контекст:
+- инструмент: BTC/USDT
+- моя гипотеза: (лонг / шорт / нет идеи)
+- где сейчас цена: (range high / low / middle / тренд)
+- что меня смущает: (опционально)
+
+задача:
+Проанализируй multi-timeframe данные (1D, 1H, 15m).
+
+Учитывай:
+- структуру рынка
+- уровни
+- объём
+- дивергенции (RSI)
+
+Важно:
+оцени дивергенции как фактор подтверждения или ослабления сценария, а не как самостоятельный сигнал.
+
+Дай строго по пунктам:
+
+1. Общий контекст рынка
+   - тренд (1D)
+   - состояние (1H)
+   - ситуация для входа (15m)
+
+2. Анализ дивергенций
+   - есть ли дивергенции на каждом TF
+   - подтверждены ли они (confirmed)
+   - насколько они значимы в текущем контексте
+   - усиливают или ослабляют текущий тренд
+
+3. Вероятностные сценарии (2–3 варианта)
+   Для каждого:
+   - описание
+   - вероятность (%)
+   - ключевые уровни
+   - влияние дивергенций (усиливает / противоречит)
+
+4. Основной сценарий (самый вероятный)
+   - логика (включая дивергенции)
+
+5. План входа (IF → THEN)
+   - условия входа
+   - точка входа
+   - SL
+   - TP (несколько уровней)
+
+6. Invalidation
+   - при каком условии сценарий ломается
+
+7. Где НЕ входить
+
+8. Что должно подтвердить движение (триггеры)
+   - включая подтверждение дивергенции (если применимо)
+
+9. Отвечай коротко и по делу</textarea>
+  </div>
+
+  <div class="result-label">
+    <span class="status-dot" id="dot"></span>
+    Результат
+    <button class="copy-btn" id="copy-btn" onclick="copyResult()" disabled>Копировать</button>
+  </div>
+  <pre id="result">Здесь появится JSON ответ…</pre>
+</div>
+
+<script>
+  const csrfToken = "{{ csrf_token }}";
+
+  /* ── helpers ── */
+  function set(fieldId, value) {
+    document.getElementById(fieldId).value = value;
+  }
+
+  function toggleTf(el) {
+    el.classList.toggle("selected");
+    document.getElementById("tf-none-hint").style.display = "none";
+  }
+
+  function getSelectedTf() {
+    return [...document.querySelectorAll(".tf-chip.selected")]
+      .map(el => el.dataset.tf);
+  }
+
+  /* ── copy ── */
+  function copyPrompt() {
+    const text = document.getElementById("gpt-prompt").value;
+    const btn  = event.target;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "Скопировано ✓";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.textContent = "Копировать";
+        btn.classList.remove("copied");
+      }, 2000);
+    });
+  }
+
+  function copyResult() {
+    const text = document.getElementById("result").textContent;
+    const btn  = document.getElementById("copy-btn");
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "Скопировано ✓";
+      btn.classList.add("copied");
+      setTimeout(() => {
+        btn.textContent = "Копировать";
+        btn.classList.remove("copied");
+      }, 2000);
+    });
+  }
+
+  /* ── main fetch ── */
+  async function fetchSnapshot() {
+    const timeframes = getSelectedTf();
+    if (timeframes.length === 0) {
+      document.getElementById("tf-none-hint").style.display = "block";
+      return;
+    }
+
+    const btn    = document.getElementById("btn");
+    const result = document.getElementById("result");
+    const dot    = document.getElementById("dot");
+
+    const params = {
+      exchange_id: document.getElementById("exchange_id").value.trim(),
+      symbol:      document.getElementById("symbol").value.trim(),
+      timeframes,
+      limit:       parseInt(document.getElementById("limit").value, 10),
+    };
+
+    btn.disabled       = true;
+    btn.innerHTML      = `<span class="spinner"></span>&nbsp; Загрузка ${timeframes.join(", ")}…`;
+    result.className   = "";
+    result.textContent = "Запрос к бирже…";
+    dot.className      = "status-dot";
+    document.getElementById("copy-btn").disabled = true;
+
+    try {
+      const resp = await fetch("/api/snapshot/", {
+        method:  "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken":  csrfToken,
+        },
+        body: JSON.stringify(params),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.error || `HTTP ${resp.status}`);
+      }
+
+      result.className   = "has-data";
+      result.textContent = JSON.stringify(data, null, 2);
+      dot.className      = "status-dot ok";
+      document.getElementById("copy-btn").disabled = false;
+
+    } catch (err) {
+      result.className   = "has-error";
+      result.textContent = `Ошибка: ${err.message}`;
+      dot.className      = "status-dot error";
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = "Получить snapshot";
+    }
+  }
+</script>
+</body>
+</html>
